@@ -1,0 +1,42 @@
+version: "3.9"
+
+volumes:
+    postgres-data:
+
+networks:
+    devcontainer-network:
+
+services:
+    app:
+        image: cadunass/devcontainer:latest
+        volumes:
+            - ../..:/workspaces:cached
+        depends_on:
+            - postgres
+        networks:
+            - devcontainer-network
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+
+    postgres:
+        image: postgres:16-bookworm
+        restart: unless-stopped
+        command:
+            - "postgres"
+            - "-c"
+            - "max_wal_size=1GB"
+            - "-c"
+            - "max_connections=1000"
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=password
+            - POSTGRES_DB=devcontainer
+        ports:
+            - "5432:5432"
+        healthcheck:
+            test: pg_isready -U postgres -h 127.0.0.1
+            interval: 5s
+        networks:
+            - devcontainer-network
